@@ -65,6 +65,21 @@ export default async function Navbar() {
         {/* Center Nav Links */}
         <nav style={{ display: "flex", alignItems: "center", gap: "20px" }}>
           <Link
+            href="/review"
+            style={{
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              color: "var(--accent-cyan)",
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            <Sparkles size={14} />
+            <span>Review</span>
+          </Link>
+          <Link
             href="/concepts"
             style={{
               fontSize: "0.9rem",
