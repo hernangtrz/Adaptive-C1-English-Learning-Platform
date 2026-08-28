@@ -11,7 +11,255 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// Initial Phase 0 System Verification Model
+// --------------------------------------------------------
+// ENUMS
+// --------------------------------------------------------
+
+enum CEFRLevel {
+  A1
+  A2
+  B1
+  B2
+  C1
+  C2
+}
+
+enum ConceptType {
+  VOCABULARY
+  PHRASAL_VERB
+  COLLOCATION
+  GRAMMAR
+  FUNCTIONAL_EXPRESSION
+  SENTENCE_PATTERN
+  PRONUNCIATION
+}
+
+enum MasteryState {
+  DISCOVERED
+  LEARNING
+  RECOGNIZED
+  RECALLABLE
+  ACTIVE
+  MASTERED
+}
+
+enum EvidenceDimension {
+  RECOGNITION
+  RECALL
+  PRODUCTION
+}
+
+enum EvidenceSource {
+  VOCABULARY_REVIEW
+  GRAMMAR_EXERCISE
+  LISTENING
+  READING
+  SHADOWING
+  SPEAKING
+  WRITING
+}
+
+// --------------------------------------------------------
+// AUTH & USER MODELS (NextAuth / Auth.js with Prisma Adapter)
+// --------------------------------------------------------
+
+model User {
+  id            String             @id @default(cuid())
+  name          String?
+  email         String             @unique
+  emailVerified DateTime?          @map("email_verified")
+  passwordHash  String?            @map("password_hash")
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  profile       UserProfile?
+  learningItems UserLearningItem[]
+  evidence      LearningEvidence[]
+  reviews       Review[]
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// --------------------------------------------------------
+// USER PROFILE & LEARNING PREFERENCES
+// --------------------------------------------------------
+
+model UserProfile {
+  id               String    @id @default(cuid())
+  userId           String    @unique @map("user_id")
+  currentCEFRLevel CEFRLevel @default(B2) @map("current_cefr_level")
+  targetCEFRLevel  CEFRLevel @default(C1) @map("target_cefr_level")
+  dailyMinutes     Int       @default(30) @map("daily_minutes")
+  timezone         String    @default("UTC")
+  nativeLanguage   String    @default("es") @map("native_language")
+  onboarded        Boolean   @default(false)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+// --------------------------------------------------------
+// LEARNING CONCEPTS (Knowledge Repository)
+// --------------------------------------------------------
+
+model LearningConcept {
+  id            String             @id @default(cuid())
+  type          ConceptType
+  canonicalForm String             @map("canonical_form")
+  meaning       String             @db.Text
+  translationEs String             @map("translation_es")
+  cefrLevel     CEFRLevel          @default(B2) @map("cefr_level")
+  explanation   String?            @db.Text
+  examples      Json               @default("[]")
+  tags          String[]           @default([])
+  phonetics     String?
+  learningItems UserLearningItem[]
+  evidence      LearningEvidence[]
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  @@unique([canonicalForm, type])
+  @@index([type])
+  @@index([cefrLevel])
+  @@map("learning_concepts")
+}
+
+// --------------------------------------------------------
+// USER LEARNING ITEM (Personalized State per User per Concept)
+// --------------------------------------------------------
+
+model UserLearningItem {
+  id                 String             @id @default(cuid())
+  userId             String             @map("user_id")
+  conceptId          String             @map("concept_id")
+  
+  // 3-Dimensional Mastery Model
+  recognitionMastery Float              @default(0.0) @map("recognition_mastery")
+  recallMastery      Float              @default(0.0) @map("recall_mastery")
+  productionMastery  Float              @default(0.0) @map("production_mastery")
+  overallMastery     Float              @default(0.0) @map("overall_mastery")
+  masteryState       MasteryState       @default(DISCOVERED) @map("mastery_state")
+  productionGap      Float              @default(0.0) @map("production_gap")
+
+  // FSRS Scheduling Memory State
+  fsrsState          Int                @default(0) @map("fsrs_state") // 0: New, 1: Learning, 2: Review, 3: Relearning
+  fsrsDueDate        DateTime?          @map("fsrs_due_date")
+  fsrsStability      Float?             @map("fsrs_stability")
+  fsrsDifficulty     Float?             @map("fsrs_difficulty")
+  fsrsElapsedDays    Int                @default(0) @map("fsrs_elapsed_days")
+  fsrsScheduledDays  Int                @default(0) @map("fsrs_scheduled_days")
+  fsrsReps           Int                @default(0) @map("fsrs_reps")
+  fsrsLapses         Int                @default(0) @map("fsrs_lapses")
+  fsrsLastReview     DateTime?          @map("fsrs_last_review")
+
+  // Historical interaction counters
+  totalReviews       Int                @default(0) @map("total_reviews")
+  successfulReviews  Int                @default(0) @map("successful_reviews")
+  lastPracticedAt    DateTime?          @map("last_practiced_at")
+
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concept            LearningConcept    @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  evidence           LearningEvidence[]
+  reviews            Review[]
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  @@unique([userId, conceptId])
+  @@index([userId, masteryState])
+  @@index([userId, fsrsDueDate])
+  @@map("user_learning_items")
+}
+
+// --------------------------------------------------------
+// LEARNING EVIDENCE (Historical Audit Trail of Practice)
+// --------------------------------------------------------
+
+model LearningEvidence {
+  id                 String            @id @default(cuid())
+  userLearningItemId String            @map("user_learning_item_id")
+  userId             String            @map("user_id")
+  conceptId          String            @map("concept_id")
+  dimension          EvidenceDimension
+  source             EvidenceSource
+  score              Float             // 0.0 to 1.0
+  metadata           Json?
+  createdAt          DateTime          @default(now()) @map("created_at")
+
+  userLearningItem   UserLearningItem  @relation(fields: [userLearningItemId], references: [id], onDelete: Cascade)
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concept            LearningConcept   @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@index([userId, conceptId])
+  @@index([createdAt])
+  @@map("learning_evidence")
+}
+
+// --------------------------------------------------------
+// REVIEWS (Review Attempt Records)
+// --------------------------------------------------------
+
+model Review {
+  id                 String           @id @default(cuid())
+  userLearningItemId String           @map("user_learning_item_id")
+  userId             String           @map("user_id")
+  rating             String           // AGAIN, HARD, GOOD, EASY
+  reviewType         String           // RECOGNITION, RECALL, PRODUCTION, CLOZE, etc.
+  timeSpentMs        Int?             @map("time_spent_ms")
+  evidenceScore      Float            @map("evidence_score")
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  userLearningItem   UserLearningItem @relation(fields: [userLearningItemId], references: [id], onDelete: Cascade)
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("reviews")
+}
+
+// System Verification Model
 model SystemHealth {
   id        String   @id @default(cuid())
   status    String   @default("ok")
