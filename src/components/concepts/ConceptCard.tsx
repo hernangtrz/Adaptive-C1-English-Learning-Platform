@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Sparkles, Eye, EyeOff, Plus, Check, BookOpen, Volume2 } from "lucide-react";
 import { trackConceptAction } from "@/modules/concepts/actions";
 
@@ -103,16 +104,27 @@ export default function ConceptCard({ concept, isTracked = false }: ConceptCardP
 
         {/* Canonical Form & Phonetics */}
         <div style={{ marginBottom: "8px" }}>
-          <h3
+          <Link
+            href={`/concepts/${concept.id}`}
             style={{
-              fontSize: "1.3rem",
-              fontFamily: "var(--font-display)",
-              fontWeight: 700,
-              color: "var(--text-primary)",
+              textDecoration: "none",
+              color: "inherit",
             }}
           >
-            {concept.canonicalForm}
-          </h3>
+            <h3
+              style={{
+                fontSize: "1.3rem",
+                fontFamily: "var(--font-display)",
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                transition: "color var(--transition-fast)",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-cyan)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+            >
+              {concept.canonicalForm}
+            </h3>
+          </Link>
           {concept.phonetics && (
             <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", fontFamily: "var(--font-mono)", marginTop: "2px" }}>
               {concept.phonetics}
