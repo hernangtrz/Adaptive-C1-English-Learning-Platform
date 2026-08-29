@@ -104,6 +104,18 @@ export default async function Navbar() {
             Grammar
           </Link>
           <Link
+            href="/listening"
+            style={{
+              fontSize: "0.9rem",
+              fontWeight: 500,
+              color: "var(--text-secondary)",
+              textDecoration: "none",
+              transition: "color var(--transition-fast)",
+            }}
+          >
+            Listening
+          </Link>
+          <Link
             href="/concepts"
             style={{
               fontSize: "0.9rem",
