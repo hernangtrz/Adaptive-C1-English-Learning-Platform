@@ -65,6 +65,18 @@ export default async function Navbar() {
         {/* Center Nav Links */}
         <nav style={{ display: "flex", alignItems: "center", gap: "20px" }}>
           <Link
+            href="/dashboard"
+            style={{
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              color: "var(--text-primary)",
+              textDecoration: "none",
+              transition: "color var(--transition-fast)",
+            }}
+          >
+            Dashboard
+          </Link>
+          <Link
             href="/training"
             style={{
               fontSize: "0.9rem",
