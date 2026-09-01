@@ -154,6 +154,18 @@ export default async function Navbar() {
             Speaking
           </Link>
           <Link
+            href="/writing"
+            style={{
+              fontSize: "0.9rem",
+              fontWeight: 500,
+              color: "var(--text-secondary)",
+              textDecoration: "none",
+              transition: "color var(--transition-fast)",
+            }}
+          >
+            Writing
+          </Link>
+          <Link
             href="/concepts"
             style={{
               fontSize: "0.9rem",
