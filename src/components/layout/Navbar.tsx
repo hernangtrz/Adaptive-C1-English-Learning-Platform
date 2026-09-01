@@ -166,6 +166,18 @@ export default async function Navbar() {
             Writing
           </Link>
           <Link
+            href="/progress"
+            style={{
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              color: "var(--accent-cyan)",
+              textDecoration: "none",
+              transition: "color var(--transition-fast)",
+            }}
+          >
+            Progress
+          </Link>
+          <Link
             href="/concepts"
             style={{
               fontSize: "0.9rem",
