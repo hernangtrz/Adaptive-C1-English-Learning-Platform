@@ -1,27 +1,30 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/modules/auth/session";
-import { Sparkles, User as UserIcon, LogOut, Compass } from "lucide-react";
+import CommandPalette from "@/components/layout/CommandPalette";
+import {
+  Sparkles,
+  User as UserIcon,
+  LogOut,
+  Compass,
+  Search,
+} from "lucide-react";
 
 export default async function Navbar() {
   const user = await getCurrentUser();
 
   return (
-    <header
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        backgroundColor: "rgba(9, 13, 22, 0.8)",
-        borderBottom: "1px solid var(--border-subtle)",
-      }}
-    >
-      <div
+    <>
+      <CommandPalette />
+      <header
         style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "16px 24px",
+          position: "sticky",
+          top: 0,
+          zIndex: 50,
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          backgroundColor: "rgba(9, 13, 22, 0.85)",
+          borderBottom: "1px solid var(--border-subtle)",
+          padding: "12px 24px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -266,7 +269,7 @@ export default async function Navbar() {
             </>
           )}
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 }
